@@ -11,6 +11,7 @@
 #define GY_91_STM32_LL_LIB_GY91ABSTRACT_H_
 
 #include <stdint-gcc.h>
+#include <math.h>       /* pow */
 
 //Magnetometer Registers
 #define WHO_AM_I_AK8963  0x00 // (AKA WIA) should return 0x48
@@ -218,26 +219,7 @@ protected:
     uint8_t Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
     uint8_t Mmode = M_8HZ; // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
 
-    virtual void println(char* c);
-    virtual void println(int val);
-    virtual void delay(int ms);
-    virtual uint32_t micros();
-
-    virtual void spiInit();
-    virtual void spiDeinit();
-    virtual uint8_t writeByteSPI(uint8_t, uint8_t);
-    virtual uint8_t readByteSPI(uint8_t subAddress);
-    virtual uint8_t readBytesSPI(uint8_t, uint8_t, uint8_t *);
     uint8_t ak8963WhoAmI_SPI();
-    virtual void select();
-    virtual void deselect();
-
-    virtual void wireInit();
-    virtual void wireDeinit();
-    virtual uint8_t writeByteWire(uint8_t, uint8_t, uint8_t);
-    virtual uint8_t readByteWire(uint8_t address, uint8_t subAddress);
-    virtual uint8_t readBytesWire(uint8_t, uint8_t, uint8_t, uint8_t *);
-    virtual void kickHardware();
 
     bool magInit();
     uint8_t writeMagByteSPI(uint8_t subAddress, uint8_t data);
@@ -245,6 +227,29 @@ protected:
     void setupMagForSPI();
 
 public:
+    // virtuals
+    virtual void println(char* c) = 0;
+    virtual void println(int val) = 0;
+    virtual uint32_t micros() = 0;
+    virtual void delay(int ms) = 0;
+
+    virtual void spiInit() = 0;
+    virtual void spiDeinit() = 0;
+    virtual uint8_t writeByteSPI(uint8_t, uint8_t) = 0;
+    virtual uint8_t readByteSPI(uint8_t subAddress) = 0;
+    virtual uint8_t readBytesSPI(uint8_t, uint8_t, uint8_t *) = 0;
+
+    virtual void select() = 0;
+    virtual void deselect() = 0;
+
+    virtual void wireInit() = 0;
+    virtual void wireDeinit() = 0;
+    virtual uint8_t writeByteWire(uint8_t, uint8_t, uint8_t) = 0;
+    virtual uint8_t readByteWire(uint8_t address, uint8_t subAddress) = 0;
+    virtual uint8_t readBytesWire(uint8_t, uint8_t, uint8_t, uint8_t *) = 0;
+    virtual void kickHardware() = 0;
+
+    // others
     float pitch, yaw, roll;
     float temperature;   // Stores the real internal chip temperature in Celsius
     int16_t tempCount;   // Temperature raw count output
@@ -273,7 +278,7 @@ public:
     int16_t accelCount[3];
 
     // Public method declarations
-    gy91abstract(int8_t spi_csPin, uint32_t spi_freq = SPI_DATA_RATE);
+    gy91abstract(bool spi_mode, uint8_t spi_csPin, uint32_t spi_freq = SPI_DATA_RATE);
     gy91abstract(uint8_t i2c_address = MPU9250_ADDRESS_AD0, uint32_t i2c_freq = 100000);
     void getMres();
     void getGres();

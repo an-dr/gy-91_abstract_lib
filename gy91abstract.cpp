@@ -9,7 +9,7 @@
 
 #include <gy91abstract.h>
 
-gy91abstract::gy91abstract(int8_t csPin, uint32_t spi_freq)
+gy91abstract::gy91abstract(bool spi_mode, uint8_t csPin, uint32_t spi_freq)
 {
     // Use hardware SPI communication
     // If used with sparkfun breakout board
