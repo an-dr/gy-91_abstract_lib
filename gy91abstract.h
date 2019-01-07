@@ -228,8 +228,6 @@ protected:
 
 public:
     // virtuals
-    virtual void println(char* c) = 0;
-    virtual void println(int val) = 0;
     virtual uint32_t micros() = 0;
     virtual void delay(int ms) = 0;
     //spi

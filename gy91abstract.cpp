@@ -619,8 +619,8 @@ void gy91abstract::magCalMPU9250(float * bias_dest, float * scale_dest)
     // Make sure resolution has been calculated
     getMres();
 
-    println("Mag Calibration: Wave device in a figure 8 until done!");
-    println("  4 seconds to get ready followed by 15 seconds of sampling)");
+    printf("Mag Calibration: Wave device in a figure 8 until done!\n");
+    printf("  4 seconds to get ready followed by 15 seconds of sampling)\n");
     delay(4000);
 
     // shoot for ~fifteen seconds of mag data
@@ -661,9 +661,6 @@ void gy91abstract::magCalMPU9250(float * bias_dest, float * scale_dest)
         }
     }
 
-    // Serial.println("mag x min/max:"); Serial.println(mag_max[0]); Serial.println(mag_min[0]);
-    // Serial.println("mag y min/max:"); Serial.println(mag_max[1]); Serial.println(mag_min[1]);
-    // Serial.println("mag z min/max:"); Serial.println(mag_max[2]); Serial.println(mag_min[2]);
 
     // Get hard iron correction
     // Get 'average' x mag bias in counts
@@ -693,7 +690,7 @@ void gy91abstract::magCalMPU9250(float * bias_dest, float * scale_dest)
     scale_dest[1] = avg_rad / ((float)mag_scale[1]);
     scale_dest[2] = avg_rad / ((float)mag_scale[2]);
 
-    println("Mag Calibration done!");
+    printf("Mag Calibration done!\n\r");
 }
 
 // Wire.h read and write protocols
@@ -749,7 +746,7 @@ uint8_t gy91abstract::readMagByteSPI(uint8_t registerAddress)
     }
     if (count > 10000)
     {
-        println("Timed out");
+        printf("Timed out\n\r");
     }
 
     return readByteSPI(53);   // Read the data that is in the SLV4_DI register
@@ -772,7 +769,7 @@ uint8_t gy91abstract::writeMagByteSPI(uint8_t registerAddress, uint8_t data)
     }
     if (count > 10000)
     {
-        println("Timed out");
+        printf("Timed out\n\r");
     }
     return 0x00;
 }
@@ -834,8 +831,8 @@ bool gy91abstract::magInit()
     // TODO: Remove this code
     uint8_t ret = ak8963WhoAmI_SPI();
 #ifdef SERIAL_DEBUG
-    println("MPU9250::magInit to return ");
-    println((ret == 0x48) ? "true" : "false");
+    printf("MPU9250::magInit to return ");
+    printf((ret == 0x48) ? "true\n\r" : "false\n\r");
 #endif
     return ret == 0x48;
 }
@@ -856,12 +853,12 @@ uint8_t gy91abstract::ak8963WhoAmI_SPI()
     oldSlaveRegister = readByteSPI(I2C_SLV0_REG);
     oldSlaveConfig = readByteSPI(I2C_SLV0_CTRL);
 #ifdef SERIAL_DEBUG
-    println("Old slave address: 0x");
-    println(oldSlaveAddress);
-    println("Old slave register: 0x");
-    println(oldSlaveRegister);
-    println("Old slave config: 0x");
-    println(oldSlaveConfig);
+    printf("Old slave address: 0x");
+    printf("%04x\n\r",oldSlaveAddress);
+    printf("Old slave register: 0x");
+    printf("%04x\n\r",oldSlaveRegister);
+    printf("Old slave config: 0x");
+    printf("%04x\n\r",oldSlaveConfig);
 #endif
 
     // Set the I2C slave addres of AK8963 and set for read
