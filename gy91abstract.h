@@ -232,16 +232,15 @@ public:
     virtual void println(int val) = 0;
     virtual uint32_t micros() = 0;
     virtual void delay(int ms) = 0;
-
+    //spi
     virtual void spiInit() = 0;
     virtual void spiDeinit() = 0;
     virtual uint8_t writeByteSPI(uint8_t, uint8_t) = 0;
     virtual uint8_t readByteSPI(uint8_t subAddress) = 0;
     virtual uint8_t readBytesSPI(uint8_t, uint8_t, uint8_t *) = 0;
-
     virtual void select() = 0;
     virtual void deselect() = 0;
-
+    //i2c
     virtual void wireInit() = 0;
     virtual void wireDeinit() = 0;
     virtual uint8_t writeByteWire(uint8_t, uint8_t, uint8_t) = 0;
