@@ -11,6 +11,7 @@
 #define GY_91_STM32_LL_LIB_GY91ABSTRACT_H_
 
 #include <stdint-gcc.h>
+#include <stdio.h>
 #include <math.h>       /* pow */
 
 //Magnetometer Registers
@@ -231,20 +232,20 @@ public:
     virtual uint32_t micros() = 0;
     virtual void delay(int ms) = 0;
     //spi
-    virtual void spiInit() = 0;
-    virtual void spiDeinit() = 0;
-    virtual uint8_t writeByteSPI(uint8_t, uint8_t) = 0;
-    virtual uint8_t readByteSPI(uint8_t subAddress) = 0;
-    virtual uint8_t readBytesSPI(uint8_t, uint8_t, uint8_t *) = 0;
-    virtual void select() = 0;
-    virtual void deselect() = 0;
+    virtual void SpiInit() = 0;
+    virtual void SpiDeinit() = 0;
+    virtual uint8_t SpiWriteByte(uint8_t, uint8_t) = 0;
+    virtual uint8_t SpiReadByte(uint8_t subAddress) = 0;
+    virtual uint8_t SpiReadBytes(uint8_t, uint8_t, uint8_t *) = 0;
+    virtual void SpiSelect() = 0;
+    virtual void SpiDeselect() = 0;
     //i2c
-    virtual void wireInit() = 0;
-    virtual void wireDeinit() = 0;
-    virtual uint8_t writeByteWire(uint8_t, uint8_t, uint8_t) = 0;
-    virtual uint8_t readByteWire(uint8_t address, uint8_t subAddress) = 0;
-    virtual uint8_t readBytesWire(uint8_t, uint8_t, uint8_t, uint8_t *) = 0;
-    virtual void kickHardware() = 0;
+    virtual void I2cInit() = 0;
+    virtual void I2cDeinit() = 0;
+    virtual uint8_t I2cWriteByte(uint8_t, uint8_t, uint8_t) = 0;
+    virtual uint8_t I2cReadByte(uint8_t address, uint8_t subAddress) = 0;
+    virtual uint8_t I2cReadBytes(uint8_t, uint8_t, uint8_t, uint8_t *) = 0;
+    virtual void I2cKickHardware() = 0;
 
     // others
     float pitch, yaw, roll;

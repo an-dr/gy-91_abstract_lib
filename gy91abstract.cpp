@@ -18,8 +18,8 @@ gy91abstract::gy91abstract(bool spi_mode, uint8_t csPin, uint32_t spi_freq)
     // very small and re-soldering can be very tricky. I2C highly recommended.
     _csPin = csPin;
     _interfaceSpeed = spi_freq;
-    spiInit();
-    deselect();
+    SpiInit();
+    SpiDeselect();
 }
 
 gy91abstract::gy91abstract(uint8_t address, uint32_t clock_frequency)
@@ -27,15 +27,15 @@ gy91abstract::gy91abstract(uint8_t address, uint32_t clock_frequency)
     _I2Caddr = address;
     _interfaceSpeed = clock_frequency;
     _csPin = NOT_SPI;   // Used to tell the library that the sensor is using I2C
-    wireInit();
+    I2cInit();
 }
 
 void gy91abstract::setupMagForSPI()
 {
     // Use slave 4 for talking to the magnetometer
-    writeByteSPI(49, ((1 << 7) | AK8963_ADDRESS));    // Set the SLV_4_ADDR register to the magnetometer's address
-    writeByteSPI(52, 0b00000000);                  // Setup SLV_4 control as needed (but not set to do an operation yet)
-    writeByteSPI(36, 0b10000000);   // Enable the multi-master mode
+    SpiWriteByte(49, ((1 << 7) | AK8963_ADDRESS));    // Set the SLV_4_ADDR register to the magnetometer's address
+    SpiWriteByte(52, 0b00000000);                  // Setup SLV_4 control as needed (but not set to do an operation yet)
+    SpiWriteByte(36, 0b10000000);   // Enable the multi-master mode
 }
 
 void gy91abstract::getMres()
@@ -699,11 +699,11 @@ uint8_t gy91abstract::writeByte(uint8_t deviceAddress, uint8_t registerAddress,
 {
     if (_csPin != NOT_SPI)
     {
-        return writeByteSPI(registerAddress, data);
+        return SpiWriteByte(registerAddress, data);
     }
     else
     {
-        return writeByteWire(deviceAddress, registerAddress, data);
+        return I2cWriteByte(deviceAddress, registerAddress, data);
     }
 }
 
@@ -719,12 +719,12 @@ uint8_t gy91abstract::readByte(uint8_t deviceAddress, uint8_t registerAddress)
         }
         else
         {
-            return readByteSPI(registerAddress);
+            return SpiReadByte(registerAddress);
         }
     }
     else
     {
-        return readByteWire(deviceAddress, registerAddress);
+        return I2cReadByte(deviceAddress, registerAddress);
     }
 }
 
@@ -732,40 +732,40 @@ uint8_t gy91abstract::readMagByteSPI(uint8_t registerAddress)
 {
     setupMagForSPI();
 
-    writeByteSPI(49, ((1 << 7) | AK8963_ADDRESS));
-    writeByteSPI(50, registerAddress);
-    writeByteSPI(52, 0b11000000);        // Command the read into I2C_SLV4_DI register, cause an interrupt when complete
+    SpiWriteByte(49, ((1 << 7) | AK8963_ADDRESS));
+    SpiWriteByte(50, registerAddress);
+    SpiWriteByte(52, 0b11000000);        // Command the read into I2C_SLV4_DI register, cause an interrupt when complete
 
     // Wait for the data to be ready
-    uint8_t I2C_MASTER_STATUS = readByteSPI(54);
+    uint8_t I2C_MASTER_STATUS = SpiReadByte(54);
 
     uint32_t count = 0;
     while (((I2C_MASTER_STATUS & 0b01000000) == 0) && (count++ < 100000)) // Checks against the I2C_SLV4_DONE bit in the I2C master status register
     {
-        I2C_MASTER_STATUS = readByteSPI(54);
+        I2C_MASTER_STATUS = SpiReadByte(54);
     }
     if (count > 10000)
     {
         printf("Timed out\n\r");
     }
 
-    return readByteSPI(53);   // Read the data that is in the SLV4_DI register
+    return SpiReadByte(53);   // Read the data that is in the SLV4_DI register
 }
 
 uint8_t gy91abstract::writeMagByteSPI(uint8_t registerAddress, uint8_t data)
 {
     setupMagForSPI();
 
-    writeByteSPI(49, ((1 << 7) | AK8963_ADDRESS));
-    writeByteSPI(50, registerAddress);
-    writeByteSPI(51, data);
-    writeByteSPI(52, 0b11000000);        // Command the read into I2C_SLV4_DI register, cause an interrupt when complete
+    SpiWriteByte(49, ((1 << 7) | AK8963_ADDRESS));
+    SpiWriteByte(50, registerAddress);
+    SpiWriteByte(51, data);
+    SpiWriteByte(52, 0b11000000);        // Command the read into I2C_SLV4_DI register, cause an interrupt when complete
 
-    uint8_t I2C_MASTER_STATUS = readByteSPI(54);
+    uint8_t I2C_MASTER_STATUS = SpiReadByte(54);
     uint32_t count = 0;
     while (((I2C_MASTER_STATUS & 0b01000000) == 0) && (count++ < 10000)) // Checks against the I2C_SLV4_DONE bit in the I2C master status register
     {
-        I2C_MASTER_STATUS = readByteSPI(54);
+        I2C_MASTER_STATUS = SpiReadByte(54);
     }
     if (count > 10000)
     {
@@ -780,53 +780,53 @@ uint8_t gy91abstract::readBytes(uint8_t deviceAddress, uint8_t registerAddress,
 {
     if (_csPin == NOT_SPI)  // Read via I2C
     {
-        return readBytesWire(deviceAddress, registerAddress, count, dest);
+        return I2cReadBytes(deviceAddress, registerAddress, count, dest);
     }
     else  // Read using SPI
     {
-        return readBytesSPI(registerAddress, count, dest);
+        return SpiReadBytes(registerAddress, count, dest);
     }
 }
 
 bool gy91abstract::magInit()
 {
     // Reset registers to defaults, bit auto clears
-    writeByteSPI(0x6B, 0x80);
+    SpiWriteByte(0x6B, 0x80);
     // Auto select the best available clock source
-    writeByteSPI(0x6B, 0x01);
+    SpiWriteByte(0x6B, 0x01);
     // Enable X,Y, & Z axes of accel and gyro
-    writeByteSPI(0x6C, 0x00);
+    SpiWriteByte(0x6C, 0x00);
     // Config disable FSYNC pin, set gyro/temp bandwidth to 184/188 Hz
-    writeByteSPI(0x1A, 0x01);
+    SpiWriteByte(0x1A, 0x01);
     // Self tests off, gyro set to +/-2000 dps FS
-    writeByteSPI(0x1B, 0x18);
+    SpiWriteByte(0x1B, 0x18);
     // Self test off, accel set to +/- 8g FS
-    writeByteSPI(0x1C, 0x08);
+    SpiWriteByte(0x1C, 0x08);
     // Bypass DLPF and set accel bandwidth to 184 Hz
-    writeByteSPI(0x1D, 0x09);
+    SpiWriteByte(0x1D, 0x09);
     // Configure INT pin (active high / push-pull / latch until read)
-    writeByteSPI(0x37, 0x30);
+    SpiWriteByte(0x37, 0x30);
     // Enable I2C master mode
     // TODO Why not do this 11-100 ms after power up?
-    writeByteSPI(0x6A, 0x20);
+    SpiWriteByte(0x6A, 0x20);
     // Disable multi-master and set I2C master clock to 400 kHz
     //https://developer.mbed.org/users/kylongmu/code/MPU9250_SPI/ calls says
     // enabled multi-master... TODO Find out why
-    writeByteSPI(0x24, 0x0D);
+    SpiWriteByte(0x24, 0x0D);
     // Set to write to slave address 0x0C
-    writeByteSPI(0x25, 0x0C);
+    SpiWriteByte(0x25, 0x0C);
     // Point save 0 register at AK8963's control 2 (soft reset) register
-    writeByteSPI(0x26, 0x0B);
+    SpiWriteByte(0x26, 0x0B);
     // Send 0x01 to AK8963 via slave 0 to trigger a soft restart
-    writeByteSPI(0x63, 0x01);
+    SpiWriteByte(0x63, 0x01);
     // Enable simple 1-byte I2C reads from slave 0
-    writeByteSPI(0x27, 0x81);
+    SpiWriteByte(0x27, 0x81);
     // Point save 0 register at AK8963's control 1 (mode) register
-    writeByteSPI(0x26, 0x0A);
+    SpiWriteByte(0x26, 0x0A);
     // 16-bit continuous measurement mode 1
-    writeByteSPI(0x63, 0x12);
+    SpiWriteByte(0x63, 0x12);
     // Enable simple 1-byte I2C reads from slave 0
-    writeByteSPI(0x27, 0x81);
+    SpiWriteByte(0x27, 0x81);
 
     // TODO: Remove this code
     uint8_t ret = ak8963WhoAmI_SPI();
@@ -839,7 +839,7 @@ bool gy91abstract::magInit()
 
 bool gy91abstract::begin()
 {
-    kickHardware();
+    I2cKickHardware();
     return magInit();
 }
 
@@ -849,9 +849,9 @@ uint8_t gy91abstract::ak8963WhoAmI_SPI()
 {
     uint8_t response, oldSlaveAddress, oldSlaveRegister, oldSlaveConfig;
     // Save state
-    oldSlaveAddress = readByteSPI(I2C_SLV0_ADDR);
-    oldSlaveRegister = readByteSPI(I2C_SLV0_REG);
-    oldSlaveConfig = readByteSPI(I2C_SLV0_CTRL);
+    oldSlaveAddress = SpiReadByte(I2C_SLV0_ADDR);
+    oldSlaveRegister = SpiReadByte(I2C_SLV0_REG);
+    oldSlaveConfig = SpiReadByte(I2C_SLV0_CTRL);
 #ifdef SERIAL_DEBUG
     printf("Old slave address: 0x");
     printf("%04x\n\r",oldSlaveAddress);
@@ -862,19 +862,19 @@ uint8_t gy91abstract::ak8963WhoAmI_SPI()
 #endif
 
     // Set the I2C slave addres of AK8963 and set for read
-    response = writeByteSPI(I2C_SLV0_ADDR, AK8963_ADDRESS | READ_FLAG);
+    response = SpiWriteByte(I2C_SLV0_ADDR, AK8963_ADDRESS | READ_FLAG);
     // I2C slave 0 register address from where to begin data transfer
-    response = writeByteSPI(I2C_SLV0_REG, 0x00);
+    response = SpiWriteByte(I2C_SLV0_REG, 0x00);
     // Enable 1-byte reads on slave 0
-    response = writeByteSPI(I2C_SLV0_CTRL, 0x81);
+    response = SpiWriteByte(I2C_SLV0_CTRL, 0x81);
 //  delayMicroseconds(1); TODO check if it needed
     // Read WIA register
-    response = writeByteSPI(WHO_AM_I_AK8963 | READ_FLAG, 0x00);
+    response = SpiWriteByte(WHO_AM_I_AK8963 | READ_FLAG, 0x00);
 
     // Restore state
-    writeByteSPI(I2C_SLV0_ADDR, oldSlaveAddress);
-    writeByteSPI(I2C_SLV0_REG, oldSlaveRegister);
-    writeByteSPI(I2C_SLV0_CTRL, oldSlaveConfig);
+    SpiWriteByte(I2C_SLV0_ADDR, oldSlaveAddress);
+    SpiWriteByte(I2C_SLV0_REG, oldSlaveRegister);
+    SpiWriteByte(I2C_SLV0_CTRL, oldSlaveConfig);
 
     return response;
 }
