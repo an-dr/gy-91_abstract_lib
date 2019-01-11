@@ -234,17 +234,17 @@ public:
     //spi
     virtual void SpiInit() = 0;
     virtual void SpiDeinit() = 0;
-    virtual uint8_t SpiWriteByte(uint8_t, uint8_t) = 0;
+    virtual uint8_t SpiWriteByte(uint8_t registerAddress, uint8_t writeData) = 0;
     virtual uint8_t SpiReadByte(uint8_t subAddress) = 0;
-    virtual uint8_t SpiReadBytes(uint8_t, uint8_t, uint8_t *) = 0;
+    virtual uint8_t SpiReadBytes(uint8_t registerAddress, uint8_t count, uint8_t * dest) = 0;
     virtual void SpiSelect() = 0;
     virtual void SpiDeselect() = 0;
     //i2c
     virtual void I2cInit() = 0;
     virtual void I2cDeinit() = 0;
-    virtual uint8_t I2cWriteByte(uint8_t, uint8_t, uint8_t) = 0;
+    virtual uint8_t I2cWriteByte(uint8_t deviceAddress, uint8_t registerAddress, uint8_t data) = 0;
     virtual uint8_t I2cReadByte(uint8_t address, uint8_t subAddress) = 0;
-    virtual uint8_t I2cReadBytes(uint8_t, uint8_t, uint8_t, uint8_t *) = 0;
+    virtual uint8_t I2cReadBytes(uint8_t deviceAddress, uint8_t registerAddress, uint8_t count, uint8_t * dest) = 0;
     virtual void I2cKickHardware() = 0;
 
     // others
@@ -281,19 +281,19 @@ public:
     void getMres();
     void getGres();
     void getAres();
-    void readAccelData(int16_t *);
-    void readGyroData(int16_t *);
-    void readMagData(int16_t *);
+    void readAccelData(int16_t * destination);
+    void readGyroData(int16_t * destination);
+    void readMagData(int16_t * destination);
     int16_t readTempData();
     void updateTime();
-    void initAK8963(float *);
+    void initAK8963(float * destination);
     void initMPU9250();
     void calibrateMPU9250(float * gyroBias, float * accelBias);
     void MPU9250SelfTest(float * destination);
     void magCalMPU9250(float * dest1, float * dest2);
-    uint8_t writeByte(uint8_t, uint8_t, uint8_t);
-    uint8_t readByte(uint8_t, uint8_t);
-    uint8_t readBytes(uint8_t, uint8_t, uint8_t, uint8_t *);
+    uint8_t writeByte(uint8_t deviceAddress, uint8_t registerAddress, uint8_t data);
+    uint8_t readByte(uint8_t deviceAddress, uint8_t registerAddress);
+    uint8_t readBytes(uint8_t deviceAddress, uint8_t registerAddress, uint8_t count, uint8_t * dest);
 
     bool isInI2cMode();
 
