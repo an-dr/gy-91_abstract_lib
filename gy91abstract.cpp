@@ -18,8 +18,8 @@ gy91abstract::gy91abstract(bool spi_mode, uint8_t csPin, uint32_t spi_freq)
     // very small and re-soldering can be very tricky. I2C highly recommended.
     _csPin = csPin;
     _interfaceSpeed = spi_freq;
-    SpiInit();
-    SpiDeselect();
+    SpiInit(); // TODO remove from an abstract constructor
+    SpiDeselect(); // TODO remove from an abstract constructor
 }
 
 gy91abstract::gy91abstract(uint8_t address, uint32_t clock_frequency)
@@ -27,7 +27,7 @@ gy91abstract::gy91abstract(uint8_t address, uint32_t clock_frequency)
     _I2Caddr = address;
     _interfaceSpeed = clock_frequency;
     _csPin = NOT_SPI;   // Used to tell the library that the sensor is using I2C
-    I2cInit();
+    I2cInit(); // TODO remove from an abstract constructor
 }
 
 void gy91abstract::setupMagForSPI()
@@ -839,7 +839,7 @@ bool gy91abstract::magInit()
 
 bool gy91abstract::begin()
 {
-    I2cKickHardware();
+    SpiKickHardware();
     return magInit();
 }
 

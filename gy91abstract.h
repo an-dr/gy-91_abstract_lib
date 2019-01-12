@@ -164,9 +164,9 @@
 // Seven-bit device address is 110100 for ADO = 0 and 110101 for ADO = 1
 // The previous preprocessor directives were sensitive to the location that the user defined AD1
 // Now simply define MPU9250_ADDRESS as one of the two following depending on your application
-#define MPU9250_ADDRESS_AD1 0x69  // Device address when ADO = 1
-#define MPU9250_ADDRESS_AD0 0x68  // Device address when ADO = 0
-#define AK8963_ADDRESS  0x0C   // Address of magnetometer
+#define MPU9250_ADDRESS_AD1 ((uint8_t)0x69)  // Device address when ADO = 1
+#define MPU9250_ADDRESS_AD0 ((uint8_t)0x68)  // Device address when ADO = 0
+#define AK8963_ADDRESS  ((uint8_t)0x0C)   // Address of magnetometer
 
 #define READ_FLAG 0x80
 #define NOT_SPI -1
@@ -239,13 +239,13 @@ public:
     virtual uint8_t SpiReadBytes(uint8_t registerAddress, uint8_t count, uint8_t * dest) = 0;
     virtual void SpiSelect() = 0;
     virtual void SpiDeselect() = 0;
+    virtual void SpiKickHardware() = 0;
     //i2c
     virtual void I2cInit() = 0;
     virtual void I2cDeinit() = 0;
     virtual uint8_t I2cWriteByte(uint8_t deviceAddress, uint8_t registerAddress, uint8_t data) = 0;
-    virtual uint8_t I2cReadByte(uint8_t address, uint8_t subAddress) = 0;
+    virtual uint8_t I2cReadByte(uint8_t deviceAddress, uint8_t registerAddress) = 0;
     virtual uint8_t I2cReadBytes(uint8_t deviceAddress, uint8_t registerAddress, uint8_t count, uint8_t * dest) = 0;
-    virtual void I2cKickHardware() = 0;
 
     // others
     float pitch, yaw, roll;
