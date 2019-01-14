@@ -1,44 +1,24 @@
 /*
- * @file gy91abstract.cpp
+ * @file gy91i2c.cpp
  *
- * @breaf gy91abstract.cpp
+ * @breaf gy91i2c.cpp
  * 
  * @date 4 янв. 2019 г.
  * @author Andrey Gramakov
  */
 
-#include <gy91abstract.h>
+#include <gy91i2c.h>
 
-gy91abstract::gy91abstract(bool spi_mode, uint8_t csPin, uint32_t spi_freq)
-{
-    // Use hardware SPI communication
-    // If used with sparkfun breakout board
-    // https://www.sparkfun.com/products/13762 , change the pre-soldered JP2 to
-    // enable SPI (solder middle and left instead of middle and right) pads are
-    // very small and re-soldering can be very tricky. I2C highly recommended.
-    _csPin = csPin;
-    _interfaceSpeed = spi_freq;
-    SpiInit(); // TODO remove from an abstract constructor
-    SpiDeselect(); // TODO remove from an abstract constructor
-}
 
-gy91abstract::gy91abstract(uint8_t address, uint32_t clock_frequency)
+
+gy91i2c::gy91i2c(uint8_t address, uint32_t clock_frequency)
 {
     _I2Caddr = address;
     _interfaceSpeed = clock_frequency;
-    _csPin = NOT_SPI;   // Used to tell the library that the sensor is using I2C
-    I2cInit(); // TODO remove from an abstract constructor
 }
 
-void gy91abstract::setupMagForSPI()
-{
-    // Use slave 4 for talking to the magnetometer
-    SpiWriteByte(49, ((1 << 7) | AK8963_ADDRESS));    // Set the SLV_4_ADDR register to the magnetometer's address
-    SpiWriteByte(52, 0b00000000);                  // Setup SLV_4 control as needed (but not set to do an operation yet)
-    SpiWriteByte(36, 0b10000000);   // Enable the multi-master mode
-}
 
-void gy91abstract::getMres()
+void gy91i2c::getMres()
 {
     switch (Mscale)
     {
@@ -53,7 +33,7 @@ void gy91abstract::getMres()
     }
 }
 
-void gy91abstract::getGres()
+void gy91i2c::getGres()
 {
     switch (Gscale)
     {
@@ -76,7 +56,7 @@ void gy91abstract::getGres()
     }
 }
 
-void gy91abstract::getAres()
+void gy91i2c::getAres()
 {
     switch (Ascale)
     {
@@ -99,7 +79,7 @@ void gy91abstract::getAres()
     }
 }
 
-void gy91abstract::readAccelData(int16_t * destination)
+void gy91i2c::readAccelData(int16_t * destination)
 {
     uint8_t rawData[6];  // x/y/z accel register data stored here
     // Read the six raw data registers into data array
@@ -111,7 +91,7 @@ void gy91abstract::readAccelData(int16_t * destination)
     destination[2] = ((int16_t)rawData[4] << 8) | rawData[5];
 }
 
-void gy91abstract::readGyroData(int16_t * destination)
+void gy91i2c::readGyroData(int16_t * destination)
 {
     uint8_t rawData[6];  // x/y/z gyro register data stored here
     // Read the six raw data registers sequentially into data array
@@ -123,7 +103,7 @@ void gy91abstract::readGyroData(int16_t * destination)
     destination[2] = ((int16_t)rawData[4] << 8) | rawData[5];
 }
 
-void gy91abstract::readMagData(int16_t * destination)
+void gy91i2c::readMagData(int16_t * destination)
 {
     // x/y/z gyro register data, ST2 register stored here, must read ST2 at end
     // of data acquisition
@@ -146,7 +126,7 @@ void gy91abstract::readMagData(int16_t * destination)
     }
 }
 
-int16_t gy91abstract::readTempData()
+int16_t gy91i2c::readTempData()
 {
     uint8_t rawData[2]; // x/y/z gyro register data stored here
     // Read the two raw data registers sequentially into data array
@@ -157,7 +137,7 @@ int16_t gy91abstract::readTempData()
 
 // Calculate the time the last update took for use in the quaternion filters
 // TODO: This doesn't really belong in this class.
-void gy91abstract::updateTime()
+void gy91i2c::updateTime()
 {
     Now = micros();
 
@@ -169,7 +149,7 @@ void gy91abstract::updateTime()
     sumCount++;
 }
 
-void gy91abstract::initAK8963(float * destination)
+void gy91i2c::initAK8963(float * destination)
 {
     // First extract the factory calibration for each magnetometer axis
     uint8_t rawData[3];  // x/y/z gyro calibration data stored here
@@ -197,14 +177,9 @@ void gy91abstract::initAK8963(float * destination)
     // Set magnetometer data resolution and sample ODR
     writeByte(AK8963_ADDRESS, AK8963_CNTL, Mscale << 4 | Mmode);
     delay(10);
-
-    if (_csPin != NOT_SPI)
-    {
-        setupMagForSPI();
-    }
 }
 
-void gy91abstract::initMPU9250()
+void gy91i2c::initMPU9250()
 {
     // wake up device
     // Clear sleep mode bit (6), enable all sensors
@@ -280,16 +255,12 @@ void gy91abstract::initMPU9250()
     writeByte(_I2Caddr, INT_ENABLE, 0x01);
     delay(100);
 
-    if (_csPin != NOT_SPI)
-    {
-        setupMagForSPI();
-    }
 }
 
 // Function which accumulates gyro and accelerometer data after device
 // initialization. It calculates the average of the at-rest readings and then
 // loads the resulting offsets into accelerometer and gyro bias registers.
-void gy91abstract::calibrateMPU9250(float * gyroBias, float * accelBias)
+void gy91i2c::calibrateMPU9250(float * gyroBias, float * accelBias)
 {
     uint8_t data[12]; // data array to hold accelerometer and gyro x, y, z, data
     uint16_t ii, packet_count, fifo_count;
@@ -491,7 +462,7 @@ void gy91abstract::calibrateMPU9250(float * gyroBias, float * accelBias)
 // Accelerometer and gyroscope self test; check calibration wrt factory settings
 // Should return percent deviation from factory trim values, +/- 14 or less
 // deviation is a pass.
-void gy91abstract::MPU9250SelfTest(float * destination)
+void gy91i2c::MPU9250SelfTest(float * destination)
 {
     uint8_t rawData[6] = { 0, 0, 0, 0, 0, 0 };
     uint8_t selfTest[6];
@@ -607,7 +578,7 @@ void gy91abstract::MPU9250SelfTest(float * destination)
 
 // Function which accumulates magnetometer data after device initialization.
 // It calculates the bias and scale in the x, y, and z axes.
-void gy91abstract::magCalMPU9250(float * bias_dest, float * scale_dest)
+void gy91i2c::magCalMPU9250(float * bias_dest, float * scale_dest)
 {
     uint16_t ii = 0, sample_count = 0;
     int32_t mag_bias[3] = { 0, 0, 0 },
@@ -693,193 +664,59 @@ void gy91abstract::magCalMPU9250(float * bias_dest, float * scale_dest)
     printf("Mag Calibration done!\n\r");
 }
 
-// Wire.h read and write protocols
-uint8_t gy91abstract::writeByte(uint8_t deviceAddress, uint8_t registerAddress,
-                                uint8_t data)
+
+bool gy91i2c::magInit()
 {
-    if (_csPin != NOT_SPI)
-    {
-        return SpiWriteByte(registerAddress, data);
-    }
-    else
-    {
-        return I2cWriteByte(deviceAddress, registerAddress, data);
-    }
+    return true;
+//    // Reset registers to defaults, bit auto clears
+//    SpiWriteByte(0x6B, 0x80);
+//    // Auto select the best available clock source
+//    SpiWriteByte(0x6B, 0x01);
+//    // Enable X,Y, & Z axes of accel and gyro
+//    SpiWriteByte(0x6C, 0x00);
+//    // Config disable FSYNC pin, set gyro/temp bandwidth to 184/188 Hz
+//    SpiWriteByte(0x1A, 0x01);
+//    // Self tests off, gyro set to +/-2000 dps FS
+//    SpiWriteByte(0x1B, 0x18);
+//    // Self test off, accel set to +/- 8g FS
+//    SpiWriteByte(0x1C, 0x08);
+//    // Bypass DLPF and set accel bandwidth to 184 Hz
+//    SpiWriteByte(0x1D, 0x09);
+//    // Configure INT pin (active high / push-pull / latch until read)
+//    SpiWriteByte(0x37, 0x30);
+//    // Enable I2C master mode
+//    // TODO Why not do this 11-100 ms after power up?
+//    SpiWriteByte(0x6A, 0x20);
+//    // Disable multi-master and set I2C master clock to 400 kHz
+//    //https://developer.mbed.org/users/kylongmu/code/MPU9250_SPI/ calls says
+//    // enabled multi-master... TODO Find out why
+//    SpiWriteByte(0x24, 0x0D);
+//    // Set to write to slave address 0x0C
+//    SpiWriteByte(0x25, 0x0C);
+//    // Point save 0 register at AK8963's control 2 (soft reset) register
+//    SpiWriteByte(0x26, 0x0B);
+//    // Send 0x01 to AK8963 via slave 0 to trigger a soft restart
+//    SpiWriteByte(0x63, 0x01);
+//    // Enable simple 1-byte I2C reads from slave 0
+//    SpiWriteByte(0x27, 0x81);
+//    // Point save 0 register at AK8963's control 1 (mode) register
+//    SpiWriteByte(0x26, 0x0A);
+//    // 16-bit continuous measurement mode 1
+//    SpiWriteByte(0x63, 0x12);
+//    // Enable simple 1-byte I2C reads from slave 0
+//    SpiWriteByte(0x27, 0x81);
+//
+//    // TODO: Remove this code
+//    uint8_t ret = ak8963WhoAmI_SPI();
+//#ifdef SERIAL_DEBUG
+//    printf("MPU9250::magInit to return ");
+//    printf((ret == 0x48) ? "true\n\r" : "false\n\r");
+//#endif
+//    return ret == 0x48;
 }
 
-// Read a byte from given register on device. Calls necessary SPI or I2C
-// implementation. This was configured in the constructor.
-uint8_t gy91abstract::readByte(uint8_t deviceAddress, uint8_t registerAddress)
+bool gy91i2c::begin()
 {
-    if (_csPin != NOT_SPI)
-    {
-        if (deviceAddress == AK8963_ADDRESS)
-        {
-            return readMagByteSPI(registerAddress);
-        }
-        else
-        {
-            return SpiReadByte(registerAddress);
-        }
-    }
-    else
-    {
-        return I2cReadByte(deviceAddress, registerAddress);
-    }
-}
-
-uint8_t gy91abstract::readMagByteSPI(uint8_t registerAddress)
-{
-    setupMagForSPI();
-
-    SpiWriteByte(49, ((1 << 7) | AK8963_ADDRESS));
-    SpiWriteByte(50, registerAddress);
-    SpiWriteByte(52, 0b11000000);        // Command the read into I2C_SLV4_DI register, cause an interrupt when complete
-
-    // Wait for the data to be ready
-    uint8_t I2C_MASTER_STATUS = SpiReadByte(54);
-
-    uint32_t count = 0;
-    while (((I2C_MASTER_STATUS & 0b01000000) == 0) && (count++ < 100000)) // Checks against the I2C_SLV4_DONE bit in the I2C master status register
-    {
-        I2C_MASTER_STATUS = SpiReadByte(54);
-    }
-    if (count > 10000)
-    {
-        printf("Timed out\n\r");
-    }
-
-    return SpiReadByte(53);   // Read the data that is in the SLV4_DI register
-}
-
-uint8_t gy91abstract::writeMagByteSPI(uint8_t registerAddress, uint8_t data)
-{
-    setupMagForSPI();
-
-    SpiWriteByte(49, ((1 << 7) | AK8963_ADDRESS));
-    SpiWriteByte(50, registerAddress);
-    SpiWriteByte(51, data);
-    SpiWriteByte(52, 0b11000000);        // Command the read into I2C_SLV4_DI register, cause an interrupt when complete
-
-    uint8_t I2C_MASTER_STATUS = SpiReadByte(54);
-    uint32_t count = 0;
-    while (((I2C_MASTER_STATUS & 0b01000000) == 0) && (count++ < 10000)) // Checks against the I2C_SLV4_DONE bit in the I2C master status register
-    {
-        I2C_MASTER_STATUS = SpiReadByte(54);
-    }
-    if (count > 10000)
-    {
-        printf("Timed out\n\r");
-    }
-    return 0x00;
-}
-
-uint8_t gy91abstract::readBytes(uint8_t deviceAddress, uint8_t registerAddress,
-                                uint8_t count,
-                                uint8_t * dest)
-{
-    if (_csPin == NOT_SPI)  // Read via I2C
-    {
-        return I2cReadBytes(deviceAddress, registerAddress, count, dest);
-    }
-    else  // Read using SPI
-    {
-        return SpiReadBytes(registerAddress, count, dest);
-    }
-}
-
-bool gy91abstract::magInit()
-{
-    // Reset registers to defaults, bit auto clears
-    SpiWriteByte(0x6B, 0x80);
-    // Auto select the best available clock source
-    SpiWriteByte(0x6B, 0x01);
-    // Enable X,Y, & Z axes of accel and gyro
-    SpiWriteByte(0x6C, 0x00);
-    // Config disable FSYNC pin, set gyro/temp bandwidth to 184/188 Hz
-    SpiWriteByte(0x1A, 0x01);
-    // Self tests off, gyro set to +/-2000 dps FS
-    SpiWriteByte(0x1B, 0x18);
-    // Self test off, accel set to +/- 8g FS
-    SpiWriteByte(0x1C, 0x08);
-    // Bypass DLPF and set accel bandwidth to 184 Hz
-    SpiWriteByte(0x1D, 0x09);
-    // Configure INT pin (active high / push-pull / latch until read)
-    SpiWriteByte(0x37, 0x30);
-    // Enable I2C master mode
-    // TODO Why not do this 11-100 ms after power up?
-    SpiWriteByte(0x6A, 0x20);
-    // Disable multi-master and set I2C master clock to 400 kHz
-    //https://developer.mbed.org/users/kylongmu/code/MPU9250_SPI/ calls says
-    // enabled multi-master... TODO Find out why
-    SpiWriteByte(0x24, 0x0D);
-    // Set to write to slave address 0x0C
-    SpiWriteByte(0x25, 0x0C);
-    // Point save 0 register at AK8963's control 2 (soft reset) register
-    SpiWriteByte(0x26, 0x0B);
-    // Send 0x01 to AK8963 via slave 0 to trigger a soft restart
-    SpiWriteByte(0x63, 0x01);
-    // Enable simple 1-byte I2C reads from slave 0
-    SpiWriteByte(0x27, 0x81);
-    // Point save 0 register at AK8963's control 1 (mode) register
-    SpiWriteByte(0x26, 0x0A);
-    // 16-bit continuous measurement mode 1
-    SpiWriteByte(0x63, 0x12);
-    // Enable simple 1-byte I2C reads from slave 0
-    SpiWriteByte(0x27, 0x81);
-
-    // TODO: Remove this code
-    uint8_t ret = ak8963WhoAmI_SPI();
-#ifdef SERIAL_DEBUG
-    printf("MPU9250::magInit to return ");
-    printf((ret == 0x48) ? "true\n\r" : "false\n\r");
-#endif
-    return ret == 0x48;
-}
-
-bool gy91abstract::begin()
-{
-    SpiKickHardware();
     return magInit();
 }
 
-// Read the WHOAMI (WIA) register of the AK8963
-// TODO: This method has side effects
-uint8_t gy91abstract::ak8963WhoAmI_SPI()
-{
-    uint8_t response, oldSlaveAddress, oldSlaveRegister, oldSlaveConfig;
-    // Save state
-    oldSlaveAddress = SpiReadByte(I2C_SLV0_ADDR);
-    oldSlaveRegister = SpiReadByte(I2C_SLV0_REG);
-    oldSlaveConfig = SpiReadByte(I2C_SLV0_CTRL);
-#ifdef SERIAL_DEBUG
-    printf("Old slave address: 0x");
-    printf("%04x\n\r",oldSlaveAddress);
-    printf("Old slave register: 0x");
-    printf("%04x\n\r",oldSlaveRegister);
-    printf("Old slave config: 0x");
-    printf("%04x\n\r",oldSlaveConfig);
-#endif
-
-    // Set the I2C slave addres of AK8963 and set for read
-    response = SpiWriteByte(I2C_SLV0_ADDR, AK8963_ADDRESS | READ_FLAG);
-    // I2C slave 0 register address from where to begin data transfer
-    response = SpiWriteByte(I2C_SLV0_REG, 0x00);
-    // Enable 1-byte reads on slave 0
-    response = SpiWriteByte(I2C_SLV0_CTRL, 0x81);
-//  delayMicroseconds(1); TODO check if it needed
-    // Read WIA register
-    response = SpiWriteByte(WHO_AM_I_AK8963 | READ_FLAG, 0x00);
-
-    // Restore state
-    SpiWriteByte(I2C_SLV0_ADDR, oldSlaveAddress);
-    SpiWriteByte(I2C_SLV0_REG, oldSlaveRegister);
-    SpiWriteByte(I2C_SLV0_CTRL, oldSlaveConfig);
-
-    return response;
-}
-
-bool gy91abstract::isInI2cMode()
-{
-    return _csPin == -1;
-}

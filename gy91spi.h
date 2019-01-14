@@ -1,14 +1,14 @@
 /*
- * @file gy91abstract.h
+ * @file gy91spi.h
  *
- * @breaf gy91abstract.h
+ * @breaf gy91spi.h
  * 
  * @date 4 янв. 2019 г.
  * @author Andrey Gramakov
  */
 
-#ifndef GY_91_STM32_LL_LIB_GY91ABSTRACT_H_
-#define GY_91_STM32_LL_LIB_GY91ABSTRACT_H_
+#ifndef GY_91_STM32_LL_LIB_gy91spi_H_
+#define GY_91_STM32_LL_LIB_gy91spi_H_
 
 #include <stdint-gcc.h>
 #include <stdio.h>
@@ -176,7 +176,7 @@
 /*
  *
  */
-class gy91abstract
+class gy91spi
 {
 protected:
 
@@ -209,7 +209,6 @@ protected:
         M_100HZ = 0x06 // 100 Hz continuous magnetometer
     };
 
-    uint8_t _I2Caddr = MPU9250_ADDRESS_AD0; // Use AD0 by default
     int8_t _csPin;                          // SPI chip select pin
     uint32_t _interfaceSpeed;               // Stores the desired I2C or SPi clock rate
 
@@ -234,18 +233,13 @@ public:
     //spi
     virtual void SpiInit() = 0;
     virtual void SpiDeinit() = 0;
-    virtual uint8_t SpiWriteByte(uint8_t registerAddress, uint8_t writeData) = 0;
-    virtual uint8_t SpiReadByte(uint8_t subAddress) = 0;
-    virtual uint8_t SpiReadBytes(uint8_t registerAddress, uint8_t count, uint8_t * dest) = 0;
+    virtual uint8_t writeByte(uint8_t registerAddress, uint8_t writeData) = 0;
+    virtual uint8_t readByte(uint8_t subAddress) = 0;
+    virtual uint8_t readBytes(uint8_t registerAddress, uint8_t count, uint8_t * dest) = 0;
+
     virtual void SpiSelect() = 0;
     virtual void SpiDeselect() = 0;
     virtual void SpiKickHardware() = 0;
-    //i2c
-    virtual void I2cInit() = 0;
-    virtual void I2cDeinit() = 0;
-    virtual uint8_t I2cWriteByte(uint8_t deviceAddress, uint8_t registerAddress, uint8_t data) = 0;
-    virtual uint8_t I2cReadByte(uint8_t deviceAddress, uint8_t registerAddress) = 0;
-    virtual uint8_t I2cReadBytes(uint8_t deviceAddress, uint8_t registerAddress, uint8_t count, uint8_t * dest) = 0;
 
     // others
     float pitch, yaw, roll;
@@ -276,8 +270,7 @@ public:
     int16_t accelCount[3];
 
     // Public method declarations
-    gy91abstract(bool spi_mode, uint8_t spi_csPin, uint32_t spi_freq = SPI_DATA_RATE);
-    gy91abstract(uint8_t i2c_address = MPU9250_ADDRESS_AD0, uint32_t i2c_freq = 100000);
+    gy91spi(uint8_t spi_csPin, uint32_t spi_freq = SPI_DATA_RATE);
     void getMres();
     void getGres();
     void getAres();
@@ -291,14 +284,10 @@ public:
     void calibrateMPU9250(float * gyroBias, float * accelBias);
     void MPU9250SelfTest(float * destination);
     void magCalMPU9250(float * dest1, float * dest2);
-    uint8_t writeByte(uint8_t deviceAddress, uint8_t registerAddress, uint8_t data);
-    uint8_t readByte(uint8_t deviceAddress, uint8_t registerAddress);
-    uint8_t readBytes(uint8_t deviceAddress, uint8_t registerAddress, uint8_t count, uint8_t * dest);
 
-    bool isInI2cMode();
 
     bool begin();
-    virtual ~gy91abstract();
+    virtual ~gy91spi();
 };
 
-#endif /* GY_91_STM32_LL_LIB_GY91ABSTRACT_H_ */
+#endif /* GY_91_STM32_LL_LIB_gy91spi_H_ */
